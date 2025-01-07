@@ -121,7 +121,7 @@ async def test_listuserdata_normalized_separator(aiohttp_client, app, tmp_path):
 async def test_post_userdata_new_file(aiohttp_client, app, tmp_path):
     client = await aiohttp_client(app)
     content = b"test content"
-    resp = await client.post("/userdata/test.txt", data=content)
+    resp = await client.post("/userdata/file?file=test.txt", data=content)
 
     assert resp.status == 200
     assert await resp.text() == '"test.txt"'
@@ -138,7 +138,7 @@ async def test_post_userdata_overwrite_existing(aiohttp_client, app, tmp_path):
 
     client = await aiohttp_client(app)
     new_content = b"updated content"
-    resp = await client.post("/userdata/test.txt", data=new_content)
+    resp = await client.post("/userdata/file?file=test.txt", data=new_content)
 
     assert resp.status == 200
     assert await resp.text() == '"test.txt"'
@@ -154,7 +154,7 @@ async def test_post_userdata_no_overwrite(aiohttp_client, app, tmp_path):
         f.write("initial content")
 
     client = await aiohttp_client(app)
-    resp = await client.post("/userdata/test.txt?overwrite=false", data=b"new content")
+    resp = await client.post("/userdata/file?file=test.txt&overwrite=false", data=b"new content")
 
     assert resp.status == 409
 
@@ -166,7 +166,7 @@ async def test_post_userdata_no_overwrite(aiohttp_client, app, tmp_path):
 async def test_post_userdata_full_info(aiohttp_client, app, tmp_path):
     client = await aiohttp_client(app)
     content = b"test content"
-    resp = await client.post("/userdata/test.txt?full_info=true", data=content)
+    resp = await client.post("/userdata/file?file=test.txt&full_info=true", data=content)
 
     assert resp.status == 200
     result = await resp.json()
@@ -181,7 +181,7 @@ async def test_move_userdata(aiohttp_client, app, tmp_path):
         f.write("test content")
 
     client = await aiohttp_client(app)
-    resp = await client.post("/userdata/source.txt/move/dest.txt")
+    resp = await client.post("/userdata/file/move?source=source.txt&dest=dest.txt")
 
     assert resp.status == 200
     assert await resp.text() == '"dest.txt"'
@@ -200,7 +200,7 @@ async def test_move_userdata_no_overwrite(aiohttp_client, app, tmp_path):
         f.write("destination content")
 
     client = await aiohttp_client(app)
-    resp = await client.post("/userdata/source.txt/move/dest.txt?overwrite=false")
+    resp = await client.post("/userdata/file/move?source=source.txt&dest=dest.txt&overwrite=false")
 
     assert resp.status == 409
 
@@ -217,7 +217,7 @@ async def test_move_userdata_full_info(aiohttp_client, app, tmp_path):
         f.write("test content")
 
     client = await aiohttp_client(app)
-    resp = await client.post("/userdata/source.txt/move/dest.txt?full_info=true")
+    resp = await client.post("/userdata/file/move?source=source.txt&dest=dest.txt&full_info=true")
 
     assert resp.status == 200
     result = await resp.json()

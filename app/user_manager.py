@@ -197,21 +197,22 @@ class UserManager():
 
             return web.json_response(results)
 
-        def get_user_data_path(request, check_exists = False, param = "file"):
-            file = request.match_info.get(param, None)
+        def get_user_data_path(request, check_exists=False, param="file"):
+            """Reads a file-like parameter from the query string."""
+            file = request.query.get(param)
             if not file:
-                return web.Response(status=400)
+                return web.Response(status=400, text=f"Missing query param '{param}'.")
 
             path = self.get_request_user_filepath(request, file)
             if not path:
-                return web.Response(status=403)
+                return web.Response(status=403, text="Forbidden path.")
 
             if check_exists and not os.path.exists(path):
-                return web.Response(status=404)
+                return web.Response(status=404, text="File not found.")
 
             return path
 
-        @routes.get("/userdata/{file}")
+        @routes.get("/userdata/file")
         async def getuserdata(request):
             path = get_user_data_path(request, check_exists=True)
             if not isinstance(path, str):
@@ -219,7 +220,7 @@ class UserManager():
 
             return web.FileResponse(path)
 
-        @routes.post("/userdata/{file}")
+        @routes.post("/userdata/file")
         async def post_userdata(request):
             """
             Upload or update a user data file.
@@ -228,12 +229,10 @@ class UserManager():
             controlling overwrite behavior and response format.
 
             Query Parameters:
+            - file: The target file path (URL encoded if necessary).
             - overwrite (optional): If "false", prevents overwriting existing files. Defaults to "true".
             - full_info (optional): If "true", returns detailed file information (path, size, modified time).
                                   If "false", returns only the relative file path.
-
-            Path Parameters:
-            - file: The target file path (URL encoded if necessary).
 
             Returns:
             - 400: If 'file' parameter is missing.
@@ -250,7 +249,7 @@ class UserManager():
                 return path
 
             overwrite = request.query.get("overwrite", 'true') != "false"
-            full_info = request.query.get('full_info', 'false').lower() == "true"
+            full_info = request.query.get("full_info", 'false').lower() == "true"
 
             if not overwrite and os.path.exists(path):
                 return web.Response(status=409, text="File already exists")
@@ -268,7 +267,7 @@ class UserManager():
 
             return web.json_response(resp)
 
-        @routes.delete("/userdata/{file}")
+        @routes.delete("/userdata/file")
         async def delete_userdata(request):
             path = get_user_data_path(request, check_exists=True)
             if not isinstance(path, str):
@@ -278,7 +277,7 @@ class UserManager():
 
             return web.Response(status=204)
 
-        @routes.post("/userdata/{file}/move/{dest}")
+        @routes.post("/userdata/file/move")
         async def move_userdata(request):
             """
             Move or rename a user data file.
@@ -286,11 +285,9 @@ class UserManager():
             This endpoint handles moving or renaming files within a user's data directory, with options for
             controlling overwrite behavior and response format.
 
-            Path Parameters:
-            - file: The source file path (URL encoded if necessary)
-            - dest: The destination file path (URL encoded if necessary)
-
             Query Parameters:
+            - source: The source file path (URL encoded if necessary)
+            - dest: The destination file path (URL encoded if necessary)
             - overwrite (optional): If "false", prevents overwriting existing files. Defaults to "true".
             - full_info (optional): If "true", returns detailed file information (path, size, modified time).
                                   If "false", returns only the relative file path.
@@ -304,12 +301,12 @@ class UserManager():
                   - Full file information (if full_info=true)
                   - Relative file path (if full_info=false)
             """
-            source = get_user_data_path(request, check_exists=True)
+            source = get_user_data_path(request, check_exists=True, param="source")
             if not isinstance(source, str):
                 return source
 
             dest = get_user_data_path(request, check_exists=False, param="dest")
-            if not isinstance(source, str):
+            if not isinstance(dest, str):
                 return dest
 
             overwrite = request.query.get("overwrite", 'true') != "false"
